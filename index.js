@@ -27,7 +27,14 @@ async function run() {
     await client.connect();
     // Send a ping to confirm a successful connection
     const porductCollection = client.db('ProductsDB').collection('products');
+    const recommendCollection = client.db('ProductsDB').collection('Recommended');
     
+    app.post(('/recommend'), async(req,res) =>{
+      const recommend = req.body;
+      const result = await recommendCollection.insertOne(recommend)
+      res.send(result)
+    })
+
     app.post('/products',async (req,res) => {
       const product = req.body;
       const result = await porductCollection.insertOne(product)
@@ -46,10 +53,51 @@ async function run() {
       res.send(result)
     })
 
+    app.put('/product/update/:id',async(req,res) => {
+      const id = req.params.id;
+      const info = req.body;
+      const filter = {_id: new ObjectId(id)};
+      const option = {upsert:true}
+      const updateInfo = {
+        $set:{
+          recommendationCount:info.recommendationCount_New
+        }
+      }
+      const result = await porductCollection.updateOne(filter,updateInfo,option)
+      res.send(result)
+    })
+
     app.get('/query/:id', async(req,res)=>{
       const id = req.params.id;
-      const query = {_id:new ObjectId(id)}
+      const query = {_id: new ObjectId(id)}
       const result = await porductCollection.findOne(query)
+      res.send(result)
+    })
+
+    app.get('/my_query/:email',async(req,res) => {
+      const email = req.params.email;
+      const query = {email: email}
+      const result = await porductCollection.find(query).toArray()
+      res.send(result)
+    })
+    app.get('/my_recommend/:email',async(req,res) => {
+      const email = req.params.email;
+      const query = {userEmail: email}
+      const result = await recommendCollection.find(query).toArray()
+      res.send(result)
+    })
+    app.get('/my_recommendation/:email',async(req,res) => {
+      const email = req.params.email;
+      const query = {
+        RecommenderEmail: email}
+      const result = await recommendCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    app.get('/recommends/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = {queryID:id}
+      const result = await recommendCollection.find(query).toArray()
       res.send(result)
     })
 
