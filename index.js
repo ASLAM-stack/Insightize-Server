@@ -2,18 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser')
+ 
 const app = express()
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors({
-  origin: ['https://insightize.web.app/'],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json())
-app.use(cookieParser())
+
 
 
 
@@ -28,67 +24,16 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-const logger = (req, res, next) => {
-  console.log('log info', req.method, req.url);
-  next();
-
-}
-
-const verifyToken = (req, res, next) => {
-  const token = req?.cookies?.token;
-  console.log('token:', token);
-
-  if (!token) {
-    return res.status(401).send({ message: 'Unauthorized access' })
-  }
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).send({ message: 'Unauthorized access' })
-    }
-    req.user = decoded
-    next();
-  })
-}
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production" ? true : false,
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-};
+ 
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // 
-    
+    // await client.connect();
     // Send a ping to confirm a successful connection
     const porductCollection = client.db('ProductsDB').collection('products');
     const recommendCollection = client.db('ProductsDB').collection('Recommended');
+    const reviewCollection = client.db('ProductsDB').collection('review');
     
-    app.post('/jwt', async (req, res) => {
-      const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '365d', })
-      res
-        .cookie('token', token, cookieOptions)
-        .send({ success: true })
-    })
-
-    app.post('/logout', async (req, res) => {
-      const user = req.user;
-
-      res.clearCookie("token", { ...cookieOptions, maxAge: 0 })
-        .send({ success: true });
-    })
-
-    app.get("/my-job-list", logger, verifyToken, async (req, res) => {
-      console.log(req.query?.email);
-      console.log('From my list', req.user);
-      if (req.query.email !== req.user.email) {
-        return res.status(403).send({ message: 'Forbidden excess' })
-      }
-      const query = { employerEmail: req.query?.email }
-      const result = await JobCollection.find(query).toArray();
-      res.send(result)
-    })
 
     app.get('/my_recommendation/:email',async(req,res) => {
       const email = req.params.email;
@@ -118,6 +63,11 @@ async function run() {
 
     app.get('/products', async (req,res) => {
       const cursor = porductCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+    app.get('/review', async (req,res) => {
+      const cursor =  reviewCollection.find();
       const result = await cursor.toArray();
       res.send(result)
     })
