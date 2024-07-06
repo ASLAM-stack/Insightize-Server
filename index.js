@@ -7,7 +7,9 @@ const app = express()
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(cors({
+  origin: 'https://insightize.web.app' // Allow only this origin
+}));
 app.use(express.json())
 
 
